@@ -9,9 +9,9 @@ import java.sql.Connection.TRANSACTION_SERIALIZABLE
 
 fun Application.configureDatabases() {
     val dataSource = HikariDataSource(HikariConfig().apply {
-        jdbcUrl = "jdbc:postgresql://${System.getenv("dbaddr")}/${System.getenv("dbname")}"
-        username = System.getenv("dbusername") ?: "root"
-        password = System.getenv("dbpassword") ?: "Citrus!"
+        jdbcUrl = "jdbc:postgresql://${System.getenv("MAIN_DB_ADDR")}/${System.getenv("MAIN_DB_NAME")}"
+        username = System.getenv("MAIN_DB_USERNAME") ?: "root"
+        password = System.getenv("MAIN_DB_PASSWORD") ?: "Citrus!"
         driverClassName = "org.postgresql.Driver"
         maximumPoolSize = 10
     })

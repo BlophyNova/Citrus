@@ -33,9 +33,8 @@ fun Application.configureSecurity() {
                 if (credential.payload.audience.contains(jwtAudience)) JWTPrincipal(credential.payload) else null
             }
         }
-        val redirects = mutableMapOf<String, String>()
         oauth("natayark") {
-            urlProvider = { "https://localhost:9000/callback" }
+            urlProvider = { "https://localhost:9000/users/natayark/oauth_callback" }
             providerLookup = {
                 OAuthServerSettings.OAuth2ServerSettings(
                     name = "natayark",
@@ -45,11 +44,10 @@ fun Application.configureSecurity() {
                     clientId = System.getenv("NATAYARK_CLIENT_ID"),
                     clientSecret = System.getenv("NATAYARK_CLIENT_SECRET"),
                     defaultScopes = listOf("https://forum.blophy.net"),
-                    extraAuthParameters = listOf("access_type" to "offline"),
-                    onStateCreated = { call, state ->
-                        call.request.queryParameters["redirectUrl"]?.let {
-                            redirects[state] = it
-                        }
+                    authorizeUrlInterceptor = {
+                        this.parameters.append("redirect_uri", "https://forum.blophy.net/natayark/oauth_callback")
+                        this.parameters.append("response_type", "code")
+                        this.parameters.append("client_id", "citrus")
                     }
                 )
             }
