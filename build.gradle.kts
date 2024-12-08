@@ -47,3 +47,27 @@ dependencies {
     testImplementation("io.ktor:ktor-server-test-host-jvm")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion")
 }
+
+ktor {
+    docker {
+        jreVersion = JavaVersion.VERSION_17
+        portMappings.set(
+            listOf(
+                io.ktor.plugin.features.DockerPortMapping(
+                    9000,
+                    9000,
+                    io.ktor.plugin.features.DockerPortMappingProtocol.TCP
+                )
+            )
+        )
+        externalRegistry.set(
+            io.ktor.plugin.features.DockerImageRegistry.dockerHub(
+                appName = provider { "LimeNetworks" },
+                username = providers.environmentVariable("DOCKER_HUB_USERNAME"),
+                password = providers.environmentVariable("DOCKER_HUB_PASSWORD")
+            )
+        )
+        localImageName.set("citrus")
+        imageTag.set("0.0.1-eap")
+    }
+}
