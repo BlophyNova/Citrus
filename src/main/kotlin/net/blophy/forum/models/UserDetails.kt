@@ -21,7 +21,7 @@ enum class Tags(val id: Int) {
 }
 
 object UserDetails : Table("userdetail") {
-    val id = integer("id").uniqueIndex()
+    val id = integer("id").uniqueIndex().autoIncrement()
     val username = text("username")
     val introduce = text("introduce")
     val contact = json<Map<String, String>>("contact", Json { prettyPrint = true })
@@ -38,14 +38,21 @@ data class UserDetail(
     val tags: List<Tags>
 )
 
-fun ResultRow.toUserDetail() {
-    val lst: List<Tags> = listOf()
-    this[UserDetails.tags].forEach { t -> lst.plus(Tags.fromId(t)) }
+fun ResultRow?.toUserDetail() = this?.let {
+    val tags = mutableListOf<Tags>()
+    this[UserDetails.tags].forEach { t -> tags.add(Tags.fromId(t)) }
+
     UserDetail(
         id = this[UserDetails.id],
         username = this[UserDetails.username],
         introduce = this[UserDetails.introduce],
         contact = this[UserDetails.contact],
-        tags = lst
+        tags = tags
     )
 }
+
+data class UserRegistrationInfo(
+    val name: String,
+    val introduce: String,
+    val contact: Map<String, String>,
+)

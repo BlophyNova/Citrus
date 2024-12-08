@@ -6,14 +6,30 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
-import io.ktor.server.auth.authenticate
+import io.ktor.server.auth.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
 fun Route.userRoutes() {
     route("/users") {
-        post("/login") {}
+        post("/login") {
+            /*val param = call.receiveParameters()
+            val user = param["email"]?.let { findUserByEmail(it) }
+                ?: param["username"]?.let { findUserByUsername(it) }
+                ?: return@post call.request(HttpStatusCode.NotFound)
+            val password = param["password"]
+                ?: return@post call.respond(HttpStatusCode.BadRequest)
+            if (user.group == UserGroup.Banned) return respond(HttpStatusCode.Forbidden)
+            if (!checkPassword(user.id, password)) return respond(HttpStatusCode.Unauthorized)
+
+            val token = generateToken(user.id, user.username)
+            respond(hashMapOf("token" to token))
+            // 将用户信息及token存储在redis中
+            loginStatusCache.resource.use {
+                it.set(user.id.toString(), token)
+            }*/
+        }
         post("/logout") {}
         post("/check_contribution") {
             val params = call.receive<Parameters>()
@@ -49,7 +65,30 @@ fun Route.userRoutes() {
             call.respond(contribution)
         }
         authenticate("natayark") {
-            post("/oauth_callback") {} // oauth回调路由
+            post("/oauth_callback") {
+                val principal = call.principal<OAuthAccessTokenResponse.OAuth2>()
+                if (principal != null) {
+                    val accessToken = principal.accessToken
+                } else {
+                    call.respond(HttpStatusCode.Unauthorized, "OAuth authentication failed")
+                }
+            }
+        }
+        authenticate("github") {
+            route("/oauth_callback") {
+                get {
+                    val principal = call.principal<OAuthAccessTokenResponse.OAuth2>()
+                    if (principal != null) {
+                        val accessToken = principal.accessToken
+                        val userInfo = HttpClient().get("https://api.github.com/user") {
+                            headers.append(HttpHeaders.Authorization, "Bearer $accessToken")
+                        }.toString()
+                        call.respond("Authenticated! User info: $userInfo")
+                    } else {
+                        call.respond(HttpStatusCode.Unauthorized, "OAuth authentication failed")
+                    }
+                }
+            }
         }
     }
 }

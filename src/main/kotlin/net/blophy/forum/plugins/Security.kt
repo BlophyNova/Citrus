@@ -33,7 +33,23 @@ fun Application.configureSecurity() {
                 if (credential.payload.audience.contains(jwtAudience)) JWTPrincipal(credential.payload) else null
             }
         }
+        oauth("github") {
+            client = HttpClient() // 可选择配置 HTTP client
+            urlProvider = { "http://localhost:9000/users/github/oauth_callback" } // 回调地址（你需要根据你的实际地址修改）
+            providerLookup = {
+                OAuthServerSettings.OAuth2ServerSettings(
+                    name = "github",
+                    clientId = System.getenv("GITHUB_CLIENT_ID"),
+                    clientSecret = System.getenv("GITHUB_CLIENT_SECRET"),
+                    authorizeUrl = "https://github.com/login/oauth/authorize",
+                    accessTokenUrl = "https://github.com/login/oauth/access_token",
+                    requestMethod = HttpMethod.Post,
+                    defaultScopes = listOf("read:user", "user:email")
+                )
+            }
+        }
         oauth("natayark") {
+            client = httpClient
             urlProvider = { "https://localhost:9000/users/natayark/oauth_callback" }
             providerLookup = {
                 OAuthServerSettings.OAuth2ServerSettings(
@@ -43,7 +59,6 @@ fun Application.configureSecurity() {
                     requestMethod = HttpMethod.Post,
                     clientId = System.getenv("NATAYARK_CLIENT_ID"),
                     clientSecret = System.getenv("NATAYARK_CLIENT_SECRET"),
-                    defaultScopes = listOf("https://forum.blophy.net"),
                     authorizeUrlInterceptor = {
                         this.parameters.append("redirect_uri", "https://forum.blophy.net/natayark/oauth_callback")
                         this.parameters.append("response_type", "code")
@@ -51,7 +66,6 @@ fun Application.configureSecurity() {
                     }
                 )
             }
-            client = httpClient
         }
     }
 }
