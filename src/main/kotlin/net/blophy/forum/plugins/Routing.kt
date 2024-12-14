@@ -3,14 +3,14 @@ package net.blophy.forum.plugins
 import io.github.smiley4.ktorswaggerui.SwaggerUI
 import io.ktor.server.application.*
 import io.ktor.server.routing.*
+import io.ktor.server.util.url
 import net.blophy.forum.routes.postsRoutes
 import net.blophy.forum.routes.userRoutes
 
 fun Application.configureRouting() {
     install(SwaggerUI) {
         swagger {
-            swaggerUrl = "swagger-ui"
-            forwardRoot = true
+            url { "swagger" }
         }
         info {
             title = "Citrus API"
