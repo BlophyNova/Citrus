@@ -1,11 +1,11 @@
-val kotlinVersion = "2.0.20"
-val logbackVersion = "1.5.6"
-val exposedVersion = "0.52.0"
+val kotlinVersion = "2.1.0"
+val logbackVersion = "1.5.12"
+val exposedVersion = "0.57.0"
 
 plugins {
-    kotlin("jvm") version "2.0.20"
-    id("io.ktor.plugin") version "3.0.0-rc-1"
-    id("org.jetbrains.kotlin.plugin.serialization") version "2.0.20"
+    kotlin("jvm") version "2.1.0"
+    id("io.ktor.plugin") version "3.0.2"
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.1.0"
 }
 
 group = "net.blophy.forum"
@@ -37,11 +37,11 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-dao:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-json:$exposedVersion")
-    implementation("org.postgresql:postgresql:42.7.3")
-    implementation("com.zaxxer:HikariCP:5.1.0")
+    implementation("org.postgresql:postgresql:42.7.4")
+    implementation("com.zaxxer:HikariCP:6.2.1")
     implementation("io.ktor:ktor-server-webjars-jvm")
     implementation("org.webjars:jquery:3.7.1")
-    implementation("io.github.smiley4:ktor-swagger-ui:2.9.0")
+    implementation("io.github.smiley4:ktor-swagger-ui:4.1.1")
     implementation("io.ktor:ktor-server-netty-jvm")
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
     testImplementation("io.ktor:ktor-server-test-host-jvm")

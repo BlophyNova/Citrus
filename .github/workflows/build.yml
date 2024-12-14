@@ -13,9 +13,9 @@ jobs:
       - name: Set gradlew file permission
         run: chmod +x ./gradlew
       - name: Build FatJar File
-        run: ./gradlew buildFatJar
+        run: ./gradlew buildFatJar --scan
       - name: Build Docker Image
-        run: ./gradlew buildImage
+        run: ./gradlew buildImage --scan
       - name: Upload FatJar
         uses: actions/upload-artifact@v4
         with:
