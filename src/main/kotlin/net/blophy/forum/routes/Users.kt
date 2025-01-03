@@ -7,9 +7,9 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.auth.*
-import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import net.blophy.forum.services.UserService
 
 fun Route.userRoutes() {
     route("/users") {
@@ -31,38 +31,47 @@ fun Route.userRoutes() {
             }*/
         }
         post("/logout") {}
-        post("/check_contribution") {
-            val params = call.receive<Parameters>()
-            val username = params["username"] ?: return@post call.respond(HttpStatusCode.BadRequest)
-            val repos = listOf(
-                "BlophyNova/Blophy",
-                "BlophyNova/Citrus",
-                "BlophyNova/ZestFlow",
-                "BlophyNova/BlophyNovaEdit",
-                "blophynova.github.io"
-            )
-            val httpClient = HttpClient(CIO) {
-                install(ContentNegotiation) {
-                    json()
-                }
-            }
-            var contribution = 0
-            for (repo in repos) {
-                try {
-                    val response =
-                        httpClient.get("https://api.github.com/repos/$repo/commits?author=$username") {
-                            headers {
-                                append("Authorization", "token ${System.getenv("GITHUB_TOKEN")}")
-                            }
-                        }.toString()
-                    if (response.isNotEmpty()) {
-                        contribution += 1
+        route("/{id}") {
+            post("/check_contribution") {
+                val username =
+                    UserService.getUserContactById(call.parameters["id"]?.toIntOrNull())?.get("github")
+                        ?: return@post call.respond(
+                            HttpStatusCode.BadRequest
+                        )
+                val repos = listOf(
+                    "BlophyNova/Blophy",
+                    "BlophyNova/Citrus",
+                    "BlophyNova/ZestFlow",
+                    "BlophyNova/BlophyNovaEdit",
+                    "blophynova.github.io"
+                )
+                val httpClient = HttpClient(CIO) {
+                    install(ContentNegotiation) {
+                        json()
                     }
-                } catch (_: Exception) {
-                    continue // 如果请求失败，继续检查下一个仓库
                 }
+                var contribution = 0
+                for (repo in repos) {
+                    try {
+                        val response =
+                            httpClient.get("https://api.github.com/repos/$repo/commits?author=$username") {
+                                headers {
+                                    append("Authorization", "token ${System.getenv("GITHUB_TOKEN")}")
+                                }
+                            }.toString()
+                        if (response.isNotEmpty()) {
+                            contribution += 1
+                        }
+                    } catch (_: Exception) {
+                        continue // 如果请求失败，继续检查下一个仓库
+                    }
+                }
+                call.respond(contribution)
             }
-            call.respond(contribution)
+            get("/latest_posts") {
+                val id = call.parameters["id"]?.toIntOrNull() ?: return@get call.respond(HttpStatusCode.BadRequest)
+                return@get call.respond(HttpStatusCode.OK, UserService.getLatestPosts(id))
+            }
         }
         authenticate("natayark") {
             post("/oauth_callback") {

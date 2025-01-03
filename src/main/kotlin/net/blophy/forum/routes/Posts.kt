@@ -6,6 +6,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import net.blophy.forum.models.Comment
 import net.blophy.forum.services.PostsService
+import java.io.File
 
 fun Route.postsRoutes() {
     route("/posts") {
@@ -18,6 +19,15 @@ fun Route.postsRoutes() {
                     call.parameters["id"]?.toIntOrNull() ?: return@get call.respond(HttpStatusCode.BadRequest)
                 )
             } // 获取特定帖子
+            get("/background") {
+                val id = call.parameters["id"]?.toIntOrNull() ?: return@get call.respond(HttpStatusCode.BadRequest)
+                val file = File("citrus/posts/$id/background.png")
+                if (file.exists()) {
+                    call.respondFile(file)
+                } else {
+                    call.respond(HttpStatusCode.NotFound)
+                }
+            } // 获取帖子背景(如果有)
             route("/comment") {
                 put {
                     try {

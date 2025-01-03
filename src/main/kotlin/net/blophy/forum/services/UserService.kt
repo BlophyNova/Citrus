@@ -16,7 +16,7 @@ import org.jetbrains.exposed.sql.update
 
 object UserService {
 
-    val users = UserDetails
+    private val users = UserDetails
 
     init {
         transaction {
@@ -26,7 +26,7 @@ object UserService {
 
     suspend fun create(user: UserRegistrationInfo) = dbQuery {
         users.insert {
-            it[users.id] = users.select(users.id).maxByOrNull { it[users.id] }?.get(users.id) ?: 0
+            it[users.id] = users.select(users.id).maxByOrNull { resultRow -> resultRow[users.id] }?.get(users.id) ?: 0
             it[users.username] = user.name
             it[users.introduce] = user.introduce
             it[users.contact] = user.contact
@@ -46,11 +46,28 @@ object UserService {
         }
     }
 
-
     suspend fun delete(id: Int) = dbQuery {
         users.deleteWhere { users.id eq id }
     }
 
-    private suspend fun <T> dbQuery(block: suspend () -> T): T =
-        newSuspendedTransaction(Dispatchers.IO) { block() }
+    suspend fun getUsernameById(id: Int?) = dbQuery {
+        return@dbQuery if (id != null) users.selectAll().where { users.id eq id }.singleOrNull()
+            ?.toUserDetail()?.username else null
+    }
+
+    suspend fun getUserContactById(id: Int?) = dbQuery {
+        return@dbQuery if (id != null) users.selectAll().where { users.id eq id }.singleOrNull()
+            ?.toUserDetail()?.contact else null
+    }
+
+    suspend fun getLatestPosts(id: Int) = dbQuery {
+        return@dbQuery PostsService.getFilteredPosts(
+            PostFilter(
+                userId = id, sortByDescending = true,
+                dependsOn = PostFilterDependsOn.DATE,
+            )
+        )
+    }
+
+    private suspend fun <T> dbQuery(block: suspend () -> T): T = newSuspendedTransaction(Dispatchers.IO) { block() }
 }
