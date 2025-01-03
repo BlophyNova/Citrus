@@ -1,36 +1,47 @@
 package net.blophy.forum.plugins
 
-import com.auth0.jwt.JWT
-import com.auth0.jwt.algorithms.Algorithm
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
-import io.ktor.server.auth.jwt.*
+import io.ktor.server.response.*
+import io.ktor.server.sessions.Sessions
+import io.ktor.server.sessions.cookie
+import kotlinx.serialization.Serializable
+
+val httpClient = HttpClient(CIO) {
+    install(io.ktor.client.plugins.contentnegotiation.ContentNegotiation) {
+        json()
+    }
+}
+
+@Serializable
+data class UserSession(val name: String, val userId: Int) {
+    fun isValid(): Boolean {
+        return true
+    }
+}
 
 fun Application.configureSecurity() {
-    val jwtAudience = System.getenv("CITRUS_JWT_AUDIENCE")
-    val jwtDomain = System.getenv("CITRUS_JWT_ISSUER")
-    val jwtSecret = System.getenv("CITRUS_JWT_SECRET")
-    val httpClient = HttpClient(CIO) {
-        install(io.ktor.client.plugins.contentnegotiation.ContentNegotiation) {
-            json()
+    install(Sessions) {
+        cookie<UserSession>("user_session") {
+            cookie.path = "/"
+            cookie.maxAgeInSeconds = 86400
         }
     }
-
     authentication {
-        jwt {
-            verifier(
-                JWT
-                    .require(Algorithm.HMAC256(jwtSecret))
-                    .withAudience(jwtAudience)
-                    .withIssuer(jwtDomain)
-                    .build()
-            )
-            validate { credential ->
-                if (credential.payload.audience.contains(jwtAudience)) JWTPrincipal(credential.payload) else null
+        session<UserSession> {
+            validate { session ->
+                if (session.isValid()) {
+                    session
+                } else {
+                    null
+                }
+            }
+            challenge {
+                call.respondRedirect("/login")
             }
         }
         oauth("github") {

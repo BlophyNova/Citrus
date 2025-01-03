@@ -10,6 +10,7 @@ import io.ktor.server.auth.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import net.blophy.forum.services.UserService
+import java.io.File
 
 fun Route.userRoutes() {
     route("/users") {
@@ -71,6 +72,27 @@ fun Route.userRoutes() {
             get("/latest_posts") {
                 val id = call.parameters["id"]?.toIntOrNull() ?: return@get call.respond(HttpStatusCode.BadRequest)
                 return@get call.respond(HttpStatusCode.OK, UserService.getLatestPosts(id))
+            }
+            get("/avatar") {
+                val id = call.parameters["id"]?.toIntOrNull() ?: return@get call.respond(HttpStatusCode.BadRequest)
+                val png = File("citrus/users/$id/avatar.png")
+                val jpg = File("citrus/users/$id/avatar.jpg")
+                if (png.exists()) {
+                    call.respondFile(png)
+                } else if (jpg.exists()) {
+                    call.respondFile(png)
+                } else {
+                    call.respond(HttpStatusCode.NotFound)
+                }
+            }
+            get("/background") {
+                val id = call.parameters["id"]?.toIntOrNull() ?: return@get call.respond(HttpStatusCode.BadRequest)
+                val file = File("citrus/users/$id/background.png")
+                if (file.exists()) {
+                    call.respondFile(file)
+                } else {
+                    call.respond(HttpStatusCode.NotFound)
+                }
             }
         }
         authenticate("natayark") {
