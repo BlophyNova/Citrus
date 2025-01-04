@@ -10,6 +10,7 @@ import io.ktor.server.response.*
 import io.ktor.server.sessions.Sessions
 import io.ktor.server.sessions.cookie
 import kotlinx.serialization.Serializable
+import net.blophy.forum.config.Settings
 
 val httpClient = HttpClient(CIO) {
     install(io.ktor.client.plugins.contentnegotiation.ContentNegotiation) {
@@ -28,7 +29,7 @@ fun Application.configureSecurity() {
     install(Sessions) {
         cookie<UserSession>("user_session") {
             cookie.path = "/"
-            cookie.maxAgeInSeconds = 86400
+            cookie.maxAgeInSeconds = Settings.tokenExpireAt
         }
     }
     authentication {

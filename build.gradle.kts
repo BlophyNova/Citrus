@@ -1,3 +1,5 @@
+@file:Suppress("SpellCheckingInspection")
+
 val kotlinVersion = "2.1.0"
 val logbackVersion = "1.5.15"
 val exposedVersion = "0.57.0"
@@ -45,6 +47,7 @@ dependencies {
     implementation("io.github.smiley4:ktor-swagger-ui:4.1.1")
     implementation("io.ktor:ktor-server-netty-jvm")
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
+    implementation("com.charleskorn.kaml:kaml:0.67.0")
     testImplementation("io.ktor:ktor-server-test-host-jvm")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion")
 }

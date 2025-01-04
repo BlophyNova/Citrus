@@ -2,15 +2,16 @@ package net.blophy.forum.plugins
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import net.blophy.forum.config.Settings
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import java.sql.Connection.TRANSACTION_SERIALIZABLE
 
 fun configureDatabases() {
     val dataSource = HikariDataSource(HikariConfig().apply {
-        jdbcUrl = "jdbc:postgresql://${System.getenv("MAIN_DB_ADDR")}/${System.getenv("MAIN_DB_NAME")}"
-        username = System.getenv("MAIN_DB_USERNAME") ?: "root"
-        password = System.getenv("MAIN_DB_PASSWORD") ?: "Citrus!"
+        jdbcUrl = "${Settings.jdbcHead}${Settings.dbAddr}/${Settings.dbName}"
+        username = Settings.dbUsername
+        password = Settings.dbPassword
         driverClassName = "org.postgresql.Driver"
         maximumPoolSize = 10
     })

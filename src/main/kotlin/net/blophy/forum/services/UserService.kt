@@ -29,7 +29,6 @@ object UserService {
             it[users.id] = users.select(users.id).maxByOrNull { resultRow -> resultRow[users.id] }?.get(users.id) ?: 0
             it[users.username] = user.name
             it[users.introduce] = user.introduce
-            it[users.contact] = user.contact
         }
     }
 
