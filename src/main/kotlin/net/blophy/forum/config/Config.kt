@@ -2,6 +2,7 @@
 
 package net.blophy.forum.config
 
+import com.charleskorn.kaml.EmptyYamlDocumentException
 import com.charleskorn.kaml.Yaml
 import kotlinx.serialization.Serializable
 import java.io.File
@@ -25,7 +26,13 @@ object Settings {
     var c = Config()
 
     init {
-        c = Yaml.default.decodeFromString(Config.serializer(), File("config.yml").readText())
+        val config = File("config.yml")
+        try {
+            c = Yaml.default.decodeFromString(Config.serializer(), if (config.exists()) config.readText() else "")
+        }
+        catch (_: EmptyYamlDocumentException) {
+            println("Config file not found.")
+        }
     }
 
     // Bind

@@ -10,7 +10,7 @@ import net.blophy.forum.routes.userRoutes
 fun Application.configureRouting() {
     install(SwaggerUI) {
         swagger {
-            url { "swagger" }
+            url {}
         }
         info {
             title = "Citrus API"

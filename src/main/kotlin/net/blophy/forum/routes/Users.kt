@@ -14,6 +14,9 @@ import java.io.File
 
 fun Route.userRoutes() {
     route("/users") {
+        post("/register") {
+
+        }
         post("/login") {
             /*val param = call.receiveParameters()
             val user = param["email"]?.let { findUserByEmail(it) }

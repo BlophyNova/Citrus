@@ -59,5 +59,4 @@ fun ResultRow?.toUserDetail() = this?.let {
 data class UserRegistrationInfo(
     val name: String,
     val introduce: String,
-    val contact: Map<String, String>,
 )

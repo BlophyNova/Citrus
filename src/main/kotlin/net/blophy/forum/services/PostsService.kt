@@ -14,7 +14,7 @@ enum class PostFilterDependsOn(val id: Int) {
     POPULAR(1);
 
     companion object {
-        private val map = PostFilterDependsOn.entries.toTypedArray().associateBy(PostFilterDependsOn::id)
+        private val map = entries.associateBy(PostFilterDependsOn::id)
         fun fromId(typeId: Int) = map[typeId] ?: NONE
     }
 }
@@ -47,7 +47,6 @@ object PostsService {
 
     suspend fun post(post: Post) = dbQuery {
         posts.insert {
-            it[posts.id] = posts.select(posts.id).maxByOrNull { resultRow -> resultRow[posts.id] }?.get(posts.id) ?: 0
             it[posts.content] = post.content
             it[posts.posterId] = post.poster
         }
@@ -59,13 +58,15 @@ object PostsService {
 
     suspend fun comment(postId: Int, content: Comment) = dbQuery {
         posts.update({ posts.id eq postId }) {
-            it[posts.comments] =
-                posts.selectAll().where { posts.id eq postId }.singleOrNull()?.toPost()?.comments?.plus(content)
-                    ?: throw NoSuchElementException()
+            it[posts.comments] = posts.selectAll().where { posts.id eq postId }
+                .singleOrNull()?.toPost()?.comments?.plus(content)
+                ?: throw PostNotFoundException("Post with ID $postId not found.")
         }
     }
 
-    suspend fun comment(postId: Int, commentId: Int, content: Comment) = dbQuery {}
+    suspend fun comment(postId: Int, commentId: Int, content: Comment) = dbQuery {
+
+    }
 
     suspend fun getFilteredPosts(filter: PostFilter) = dbQuery {
         val query = posts.selectAll()
@@ -74,25 +75,23 @@ object PostsService {
         query.toList().toPosts()
     }
 
-    private fun Query.applyFilters(filter: PostFilter): Query = this
-        .let { query ->
-            filter.userId?.let { query.andWhere { posts.posterId eq it } } ?: query
+    private fun Query.applyFilters(filter: PostFilter): Query {
+        return this.apply {
+            filter.userId?.let { andWhere { posts.posterId eq it } }
+            filter.hasContent?.let { andWhere { posts.content like "%$it%" } }
         }
-        .let { query ->
-            filter.hasContent?.let { query.andWhere { posts.content like "%$it%" } } ?: query
-        }
+    }
 
-    private fun Query.applySorting(filter: PostFilter): Query = this
-        .let { query ->
-            filter.dependsOn.let {
-                when (it) {
-                    PostFilterDependsOn.DATE -> query.orderBy(posts.id to (if (filter.sortByDescending) SortOrder.DESC else SortOrder.ASC))
-                    PostFilterDependsOn.POPULAR -> query.orderBy(posts.comments.count() to (if (filter.sortByDescending) SortOrder.DESC else SortOrder.ASC))
-                }
-            }
+    private fun Query.applySorting(filter: PostFilter): Query {
+        val order = when (filter.dependsOn) {
+            PostFilterDependsOn.DATE -> posts.id to if (filter.sortByDescending) SortOrder.DESC else SortOrder.ASC
+            PostFilterDependsOn.POPULAR -> posts.comments.count() to if (filter.sortByDescending) SortOrder.DESC else SortOrder.ASC
         }
-
+        return orderBy(order)
+    }
 
     private suspend fun <T> dbQuery(block: suspend () -> T): T =
         newSuspendedTransaction(Dispatchers.IO) { block() }
+
+    class PostNotFoundException(message: String) : NoSuchElementException(message)
 }
