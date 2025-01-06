@@ -1,35 +1,19 @@
 package net.blophy.forum.services
 
 import kotlinx.coroutines.Dispatchers
-import kotlinx.serialization.Serializable
-import net.blophy.forum.enums.UserTags.NONE
 import net.blophy.forum.models.*
+import net.blophy.forum.serializables.PostFilter
+import net.blophy.forum.serializables.PostFilterDependsOn
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.json.contains
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
-
-enum class PostFilterDependsOn(val id: Int) {
-    DATE(0),
-    POPULAR(1);
-
-    companion object {
-        private val map = entries.associateBy(PostFilterDependsOn::id)
-        fun fromId(typeId: Int) = map[typeId] ?: NONE
-    }
-}
-
-@Serializable
-data class PostFilter(
-    val sortByDescending: Boolean = false,
-    val userId: Int? = null,
-    val dependsOn: PostFilterDependsOn = PostFilterDependsOn.POPULAR,
-    val hasContent: String? = null
-)
 
 object PostsService {
 
     private val posts = Posts
+    private val comments = Comments
 
     init {
         transaction {
@@ -56,17 +40,50 @@ object PostsService {
         posts.deleteWhere { posts.id eq id }
     }
 
-    suspend fun comment(postId: Int, content: Comment) = dbQuery {
-        posts.update({ posts.id eq postId }) {
-            it[posts.comments] = posts.selectAll().where { posts.id eq postId }
-                .singleOrNull()?.toPost()?.comments?.plus(content)
-                ?: throw PostNotFoundException("Post with ID $postId not found.")
+    suspend fun comment(post: Int, comment: Comment) = dbQuery {
+        if (posts.selectAll().where { posts.id eq post }.singleOrNull() == null) {
+            throw PostNotFoundException(post)
+        }
+        val id = comments.insertAndGetId {
+            it[authorId] = comment.authorId
+            it[postId] = post
+            it[parentCommentId] = 0
+            it[content] = comment.content
+        }
+        posts.upsert {
+            it[comments] = it[comments].plus(id.value)
         }
     }
 
-    suspend fun comment(postId: Int, commentId: Int, content: Comment) = dbQuery {
-
+    suspend fun comment(post: Int, commentId: Int, comment: Comment) = dbQuery {
+        if (posts.selectAll().where { posts.id eq post }.singleOrNull() == null) {
+            throw PostNotFoundException(post)
+        }
+        if (comments.selectAll().where { comments.id eq commentId }.singleOrNull() == null) {
+            throw CommentNotFoundException(post)
+        }
+        val id = comments.insertAndGetId {
+            it[authorId] = comment.authorId
+            it[postId] = post
+            it[parentCommentId] = commentId
+            it[content] = comment.content
+        }
+        posts.upsert {
+            it[comments] = it[comments].plus(id.value)
+        }
     }
+
+    suspend fun deleteComment(post: Int, id: Int) = dbQuery {
+        comments.deleteWhere { comments.id eq id }
+        val postRecord = posts.selectAll().where { posts.id eq post }.singleOrNull()
+        if (postRecord != null) {
+            val updatedComments = postRecord[posts.comments].filter { it != id }
+            posts.update({ posts.id eq post }) {
+                it[posts.comments] = updatedComments
+            }
+        }
+    }
+
 
     suspend fun getFilteredPosts(filter: PostFilter) = dbQuery {
         val query = posts.selectAll()
@@ -79,6 +96,9 @@ object PostsService {
         return this.apply {
             filter.userId?.let { andWhere { posts.posterId eq it } }
             filter.hasContent?.let { andWhere { posts.content like "%$it%" } }
+            filter.partitions?.let {
+                andWhere { posts.partitions.contains({ it.map { i -> i.id } }) }
+            }
         }
     }
 
@@ -93,5 +113,6 @@ object PostsService {
     private suspend fun <T> dbQuery(block: suspend () -> T): T =
         newSuspendedTransaction(Dispatchers.IO) { block() }
 
-    class PostNotFoundException(message: String) : NoSuchElementException(message)
+    class CommentNotFoundException(id: Int) : NoSuchElementException("Comment not found: $id")
+    class PostNotFoundException(id: Int) : NoSuchElementException("Pos not found: $id")
 }

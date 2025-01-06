@@ -23,14 +23,13 @@ data class Config(
 
 object Settings {
 
-    var c = Config()
+    private var c = Config()
 
     init {
         val config = File("config.yml")
         try {
             c = Yaml.default.decodeFromString(Config.serializer(), if (config.exists()) config.readText() else "")
-        }
-        catch (_: EmptyYamlDocumentException) {
+        } catch (_: EmptyYamlDocumentException) {
             println("Config file not found.")
         }
     }

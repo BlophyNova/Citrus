@@ -1,8 +1,12 @@
 package net.blophy.forum.services
 
 import kotlinx.coroutines.Dispatchers
-import net.blophy.forum.models.*
+import net.blophy.forum.models.UserDetail
+import net.blophy.forum.models.UserDetails
+import net.blophy.forum.models.UserRegistrationInfo
 import net.blophy.forum.models.toUserDetail
+import net.blophy.forum.serializables.PostFilter
+import net.blophy.forum.serializables.PostFilterDependsOn
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
@@ -20,7 +24,7 @@ object UserService {
 
     // 创建新用户
     suspend fun create(user: UserRegistrationInfo) = dbQuery {
-        users.insert{
+        users.insert {
             it[username] = user.name
             it[introduce] = user.introduce
         }
@@ -47,9 +51,9 @@ object UserService {
         users.deleteWhere { users.id eq id }
     }
 
-    suspend fun getUsernameById(id: Int?) = getUserDetailFieldById(id) { it.username }
+    fun getUsernameById(id: Int?) = getUserDetailFieldById(id) { it.username }
 
-    suspend fun getUserContactById(id: Int?) = getUserDetailFieldById(id) { it.contact }
+    fun getUserContactById(id: Int?) = getUserDetailFieldById(id) { it.contact }
 
     // 获取用户最新的帖子
     suspend fun getLatestPosts(id: Int) = dbQuery {
@@ -61,7 +65,7 @@ object UserService {
         )
     }
 
-    private suspend fun <R> getUserDetailFieldById(id: Int?, fieldSelector: (UserDetail) -> R): R? {
+    private fun <R> getUserDetailFieldById(id: Int?, fieldSelector: (UserDetail) -> R): R? {
         return id?.let {
             users.selectAll().where { users.id eq id }
                 .singleOrNull()?.toUserDetail()?.let(fieldSelector)
