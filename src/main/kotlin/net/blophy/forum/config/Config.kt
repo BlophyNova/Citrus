@@ -4,6 +4,10 @@ package net.blophy.forum.config
 
 import com.charleskorn.kaml.EmptyYamlDocumentException
 import com.charleskorn.kaml.Yaml
+import io.ktor.client.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import java.io.File
 
@@ -18,6 +22,7 @@ data class Config(
     val smtpHost: String? = null,
     val smtpPort: Int? = null,
     val smtpUsername: String? = null,
+    val redisUrl: String? = null,
     val jdbcHead: String? = null,
 )
 
@@ -46,6 +51,8 @@ object Settings {
     val dbName = System.getenv("DB_NAME") ?: c.dbName ?: "citrus"
     val dbUsername = System.getenv("MAINDB_USERNAME") ?: c.dbUsername ?: "surtic"
     val dbPassword = System.getenv("MAINDB_PASSWORD") ?: ""
+
+    val redis = System.getenv("REDIS_URL") ?: c.redisUrl ?: "localhost:6379"
 
     val jdbcHead = System.getenv("JDBC_HEAD") ?: c.jdbcHead ?: "jdbc:postgresql://"
 
@@ -92,72 +99,8 @@ object Settings {
     val trustedEmailService = setOf(
         "blophy.net",
     )
-    val blockedEmailService = setOf(
-        // mail.cx
-        "qabq.com",
-        "nqmo.com",
-        "end.tw",
-        "uuf.me",
-        "yzm.de",
-        // temp-mail.io
-        "tippabble.com",
-        "rfcdrive.com",
-        "gonetor.com",
-        "zlorkun.com",
-        "somelora.com",
-        "vvatxiy.com",
-        "dygovil.com",
-        "tidissajiiu.com",
-        "vafyxh.com",
-        "knmcadibav.com",
-        "smykwb.com",
-        "wywnxa.com",
-        "qacmjeq.com",
-        "qejjyl.com",
-        "zvvzuv.com",
-        "bltiwd.com",
-        "qzueos.com",
-        "vwhins.com",
-        // guerrillamail.com
-        "sharklasers.com",
-        "guerrillamail.info",
-        "grr.la",
-        "guerrillamail.biz",
-        "guerrillamail.com",
-        "guerrillamail.de",
-        "guerrillamail.net",
-        "guerrillamail.org",
-        "guerrillamailblock.com",
-        "pokemail.net",
-        "spam4.me",
-        // cs.email
-        "cs.email",
-        "deinbox.com",
-        "disposable.site",
-        "itcompu.com",
-        "netcom.ws",
-        "pewpewpewpew.pw",
-        "spammer.fail",
-        "spammy.host",
-        "spamthis.network",
-        "techblast.ch",
-        "totallynotfake.net",
-        "yermail.net",
-        // moakt.com
-        "teml.net",
-        "tmpeml.com",
-        "tmpbox.net",
-        "moakt.cc",
-        "disbox.net",
-        "tmpmail.org",
-        "tmpmail.net",
-        "tmails.net",
-        "disbox.org",
-        "moakt.co",
-        "moakt.ws",
-        "tmail.ws",
-        "bareed.ws",
-        // tempmail.cn
-        "tempmail.cn"
-    )
+    val blockedEmailService = runBlocking {
+        HttpClient().get("https://raw.githubusercontent.com/disposable/disposable-email-domains/master/domains_strict.txt")
+            .bodyAsText().split("\\r?\\n|\\r").toSet()
+    }
 }

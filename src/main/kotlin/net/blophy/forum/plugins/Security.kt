@@ -8,8 +8,10 @@ import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.response.*
 import io.ktor.server.sessions.*
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import net.blophy.forum.config.Settings
+import net.blophy.forum.utils.LoginMan
 
 val httpClient = HttpClient(CIO) {
     install(io.ktor.client.plugins.contentnegotiation.ContentNegotiation) {
@@ -20,7 +22,7 @@ val httpClient = HttpClient(CIO) {
 @Serializable
 data class UserSession(val name: String, val userId: Int) {
     fun isValid(): Boolean {
-        return true
+        return runBlocking { LoginMan.isLoggedIn(userId) }
     }
 }
 

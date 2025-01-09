@@ -47,7 +47,7 @@ fun Route.userRoutes() {
                     "BlophyNova/Citrus",
                     "BlophyNova/ZestFlow",
                     "BlophyNova/BlophyNovaEdit",
-                    "blophynova.github.io"
+                    "BlophyNova/blophynova.github.io"
                 )
                 val httpClient = HttpClient(CIO) {
                     install(ContentNegotiation) {
@@ -83,7 +83,7 @@ fun Route.userRoutes() {
                 if (png.exists()) {
                     call.respondFile(png)
                 } else if (jpg.exists()) {
-                    call.respondFile(png)
+                    call.respondFile(jpg)
                 } else {
                     call.respond(HttpStatusCode.NotFound)
                 }
