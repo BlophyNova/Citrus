@@ -2,12 +2,12 @@ package net.blophy.forum.utils
 
 import io.ktor.util.logging.*
 import net.blophy.forum.config.Settings
+import net.blophy.forum.models.Cache
 import java.util.*
 import java.util.concurrent.TimeUnit
 import javax.mail.*
 import javax.mail.internet.InternetAddress
 import javax.mail.internet.MimeMessage
-import net.blophy.forum.models.Cache
 
 val logger = KtorSimpleLogger("net.blophy.forum.utils.ev")
 
@@ -64,20 +64,18 @@ object CodeMan {
     }
 
     private suspend fun storeCode(email: String, code: String) {
-        Cache.use {
+        Cache.useWrapper {
             // 将验证码存储在Redis中，设置过期时间为10分钟
-            it.set(email, code)
-            it.expire(email, TimeUnit.MINUTES.toSeconds(10).toULong())
+            it.set(email, code, TimeUnit.MINUTES.toSeconds(10).toULong())
             // 60秒内不得重复请求验证码
-            it.set("look:${email}", "1")
-            it.expire("look:${email}", TimeUnit.MINUTES.toSeconds(1).toULong())
+            it.set("look:${email}", "1", TimeUnit.MINUTES.toSeconds(1).toULong())
         }
     }
 
     suspend fun verifyCode(email: String, code: String): Boolean {
-        return Cache.use {
+        return Cache.useWrapper {
             val storedCode = it.get(email)
-            return@use if (storedCode != null && storedCode == code.trim()) {
+            return@useWrapper if (storedCode != null && storedCode == code.trim()) {
                 // 验证成功后删除验证码
                 it.del(email)
                 true
@@ -108,10 +106,8 @@ object VerificationCodeManager {
     ) else null
 
     suspend fun genCode(username: String, email: String): Int {
-        if (Cache.use {
-                if (it.exists("look:$email").toInt() == 1)
-                    return@use -1
-            } == -1) return -1
+        if (Cache.useWrapper { it.exists("look:$email") })
+            return -1
         val code = CodeMan.generateCode(email)
         val message = CodeMan.genMessage(username, code)
         if (service != null) {
@@ -125,11 +121,10 @@ object VerificationCodeManager {
 
     suspend fun verifyCode(email: String, code: String, type: String): Boolean {
         if (CodeMan.verifyCode(email, code.trim().lowercase())) {
-            Cache.use {
+            Cache.useWrapper {
                 // 验证后120秒内有效
-                it.set("$type:$email", "1")
-                it.expire(email, TimeUnit.MINUTES.toSeconds(2).toULong())
-                return@use true
+                it.set("$type:$email", "1", TimeUnit.MINUTES.toSeconds(2).toULong())
+                return@useWrapper true
             }
         }
         return false
